@@ -115,19 +115,35 @@
         gap: 28px;
       }
       nav a {
+        position: relative;
         text-decoration: none;
         font-size: 14px;
         letter-spacing: 0.1em;
         color: var(--mute);
         white-space: nowrap;
-        border-bottom: 1px solid transparent;
-        transition:
-          color 0.2s,
-          border-color 0.2s;
+        transition: color 0.2s;
       }
-      nav a:hover {
+      nav a::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        bottom: -4px;
+        left: 0;
+        height: 2px;
+        background: var(--ink);
+        transform: scaleX(0);
+        transform-origin: center;
+        transition: transform 0.25s ease;
+      }
+      nav a:hover,
+      nav a:focus,
+      nav a.is-active {
         color: var(--ink);
-        border-color: var(--ink);
+      }
+      nav a:hover::after,
+      nav a:focus::after,
+      nav a.is-active::after {
+        transform: scaleX(1);
       }
       .hero {
         position: relative;
@@ -419,6 +435,9 @@
         .js .rv {
           opacity: 1;
           transform: none;
+          transition: none;
+        }
+        nav a::after {
           transition: none;
         }
       }
@@ -734,8 +753,8 @@
       html[data-theme='purple'] h2 {
         font-weight: 300;
       }
-      html[data-theme='purple'] nav a:hover {
-        border-color: #7b2bd6;
+      html[data-theme='purple'] nav a::after {
+        background: #7b2bd6;
       }
       html[data-theme='purple'] .row {
         transition:
@@ -1088,6 +1107,44 @@
             busy = 0
           }, 950)
         })
+
+        var navLinks = Array.prototype.slice.call(document.querySelectorAll('nav a[href^="#"]')),
+          navSections = navLinks
+            .map(function (link) {
+              return document.querySelector(link.getAttribute('href'))
+            })
+            .filter(Boolean),
+          navTick = 0
+
+        function updateActiveNav() {
+          var marker = window.scrollY + Math.min(window.innerHeight * 0.38, 260),
+            activeId = ''
+
+          navSections.forEach(function (section) {
+            if (section.offsetTop <= marker) activeId = section.id
+          })
+
+          if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2 && navSections.length) {
+            activeId = navSections[navSections.length - 1].id
+          }
+
+          navLinks.forEach(function (link) {
+            var isActive = link.getAttribute('href') === '#' + activeId
+            link.classList.toggle('is-active', isActive)
+            if (isActive) link.setAttribute('aria-current', 'location')
+            else link.removeAttribute('aria-current')
+          })
+          navTick = 0
+        }
+
+        function queueActiveNavUpdate() {
+          if (!navTick) navTick = requestAnimationFrame(updateActiveNav)
+        }
+
+        window.addEventListener('scroll', queueActiveNavUpdate, { passive: true })
+        window.addEventListener('resize', queueActiveNavUpdate)
+        window.addEventListener('hashchange', queueActiveNavUpdate)
+        updateActiveNav()
       })()
     </script>
   </body>
